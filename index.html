@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Misi Lanun Hijaiyah - Edisi Rumah Sukan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        @keyframes rainbowShift {
+            0% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(180deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        .animated-rainbow-ship {
+            animation: rainbowShift 4s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-sky-950 text-white select-none overflow-hidden touch-manipulation">
+
+    <audio id="bgm-menu" loop preload="auto"><source src="bgm-menu.mp3" type="audio/mpeg"></audio>
+    <audio id="bgm-map" loop preload="auto"><source src="bgm-map.mp3" type="audio/mpeg"></audio>
+    <audio id="bgm-game" loop preload="auto"><source src="bgm-game.mp3" type="audio/mpeg"></audio>
+
+    <div id="bubble-container" class="pointer-events-none fixed inset-0 z-50 hidden overflow-hidden"></div>
+
+    <div id="app" class="relative w-full max-w-md mx-auto h-[100dvh] bg-sky-900 shadow-2xl flex flex-col overflow-hidden">
+        
+        <!-- SKRIN MULA -->
+        <div id="start-overlay" class="absolute inset-0 z-40 bg-sky-950 flex flex-col items-center justify-center text-center p-4">
+            <h1 class="text-5xl font-black text-yellow-400 mb-8 drop-shadow-lg leading-tight">MISI LANUN<br>HIJAIYAH</h1>
+            <button onclick="startApp()" class="btn-primary text-2xl py-4 px-10 animate-bounce">KLIK UNTUK MULA ⚓</button>
+        </div>
+
+        <!-- OVERLAY PENDAFTARAN RUMAH SUKAN -->
+        <div id="register-overlay" class="hidden absolute inset-0 z-50 bg-sky-950/95 flex-col items-center justify-center p-6 text-center">
+            <div class="bg-slate-900 border-2 border-yellow-500 rounded-3xl p-5 w-full max-w-xs shadow-2xl">
+                <h2 class="text-2xl font-black text-yellow-400 mb-1">DAFTAR KAPTEN ⚓</h2>
+                <p class="text-xs text-sky-200 mb-4">Masukkan nama & pilih Rumah Sukan anda</p>
+
+                <input type="text" id="player-name-input" placeholder="Nama Kapten..." maxlength="12" class="w-full py-3 px-4 rounded-xl bg-slate-800 border border-slate-600 text-white font-bold text-center text-base mb-4 focus:outline-none focus:border-yellow-400">
+
+                <p class="text-xs font-bold text-yellow-300 mb-2">PILIH RUMAH SUKAN:</p>
+                <div class="grid grid-cols-2 gap-2.5 mb-6">
+                    <button onclick="selectHouseRegister('temenggung')" id="btn-house-temenggung" class="house-opt-btn p-3 rounded-xl border-2 border-amber-400 bg-amber-500/20 text-yellow-300 font-bold text-xs flex items-center justify-center gap-2">
+                        <span>🟡</span> <span>Temenggung</span>
+                    </button>
+                    <button onclick="selectHouseRegister('syahbandar')" id="btn-house-syahbandar" class="house-opt-btn p-3 rounded-xl border-2 border-green-500 bg-green-500/20 text-green-300 font-bold text-xs flex items-center justify-center gap-2">
+                        <span>🟢</span> <span>Syahbandar</span>
+                    </button>
+                    <button onclick="selectHouseRegister('bendahara')" id="btn-house-bendahara" class="house-opt-btn p-3 rounded-xl border-2 border-blue-400 bg-blue-500/20 text-blue-300 font-bold text-xs flex items-center justify-center gap-2">
+                        <span>🔵</span> <span>Bendahara</span>
+                    </button>
+                    <button onclick="selectHouseRegister('laksamana')" id="btn-house-laksamana" class="house-opt-btn p-3 rounded-xl border-2 border-red-500 bg-red-500/20 text-red-300 font-bold text-xs flex items-center justify-center gap-2">
+                        <span>🔴</span> <span>Laksamana</span>
+                    </button>
+                </div>
+
+                <button onclick="confirmRegistration()" class="btn-primary w-full py-3.5 text-lg">MULA BELAYAR ⛵</button>
+            </div>
+        </div>
+
+        <!-- TOP BAR -->
+        <div id="top-bar" class="hidden bg-sky-950 p-2.5 justify-between items-center z-20 shadow-md border-b border-sky-800">
+            <button onclick="nav('menu')" class="text-xl bg-sky-800 w-9 h-9 rounded-full flex items-center justify-center border border-sky-600 active:scale-95">🏠</button>
+            
+            <div class="flex items-center gap-2">
+                <span id="player-badge" class="px-3 py-1 rounded-full text-xs font-black border border-white/20 shadow">Kapten</span>
+                <div class="flex gap-3 font-bold text-yellow-400 bg-sky-900 px-3 py-1 rounded-full border border-sky-700 text-xs">
+                    <span id="stat-stars">0 ⭐</span>
+                    <span id="stat-coins">0 💰</span>
+                </div>
+            </div>
+
+            <button id="btn-audio" onclick="toggleAudio()" class="text-xl bg-sky-800 w-9 h-9 rounded-full flex items-center justify-center border border-sky-600 active:scale-95">🔊</button>
+        </div>
+
+        <!-- SKRIN 1: MENU UTAMA -->
+        <div id="screen-menu" class="game-screen hidden flex-col relative bg-sky-900 p-6 items-center justify-center h-full w-full">
+            <div class="z-10 flex flex-col items-center w-full gap-3 overflow-y-auto">
+                <div class="text-5xl mb-1 drop-shadow-lg">🏴‍☠️</div>
+                <h1 class="text-3xl font-black text-yellow-400 text-center mb-1 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] leading-tight">MISI LANUN<br><span class="text-xl text-white">HIJAIYAH</span></h1>
+                
+                <button onclick="nav('map')" class="btn-primary w-full py-3.5 text-lg">MULA PENGEMBARAAN ⛵</button>
+                <button onclick="nav('leaderboard')" class="btn-primary w-full py-3 text-base bg-gradient-to-r from-amber-500 to-yellow-600 border-yellow-300">PAPAN MARKAH RUMAH 🏆</button>
+                <button onclick="nav('shop')" class="btn-primary w-full py-3 text-base bg-gradient-to-r from-purple-600 to-indigo-700 border-indigo-400">KEDAI KAPAL 🛒</button>
+
+                <div class="bg-sky-950/70 p-3 rounded-xl border border-sky-800 w-full text-xs mt-2">
+                    <div class="flex items-center justify-between font-bold text-sky-200 mb-2">
+                        <span id="menu-player-info">Kapten (Rumah)</span>
+                        <button onclick="showRegisterModal()" class="text-yellow-400 text-xs underline font-bold">Tukar Profil</button>
+                    </div>
+                    <label class="flex items-center justify-between font-bold text-sky-200 mb-1">
+                        <span>Muzik & Bunyi</span>
+                        <input type="checkbox" id="toggle-audio-setting" checked onchange="toggleAudio()" class="w-4 h-4 rounded accent-yellow-400">
+                    </label>
+                    <button onclick="resetData()" class="mt-1.5 w-full py-1 bg-red-900/50 rounded-lg text-red-300 font-bold border border-red-800 text-xs">Padam Data Permainan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SKRIN LEADERBOARD RUMAH SUKAN -->
+        <div id="screen-leaderboard" class="game-screen hidden flex-col p-4 h-full w-full bg-slate-900">
+            <div class="flex items-center justify-between mb-4 mt-2">
+                <div class="flex items-center">
+                    <button onclick="nav('menu')" class="text-2xl mr-3 active:scale-90 bg-sky-800/80 rounded-full w-10 h-10 flex items-center justify-center border border-sky-600 shadow-md">⬅️</button>
+                    <div>
+                        <h2 class="text-xl font-black text-yellow-400 leading-none drop-shadow">PAPAN MARKAH 🏆</h2>
+                        <p class="text-sky-200 text-xs mt-1">Kedudukan Kejohanan (Live Online)</p>
+                    </div>
+                </div>
+                <button onclick="syncScoresFromCloud()" class="text-xs bg-sky-800 hover:bg-sky-700 px-3 py-1.5 rounded-lg border border-sky-500 font-bold active:scale-95 flex items-center gap-1">
+                    🔄 <span>Refresh</span>
+                </button>
+            </div>
+            <div id="leaderboard-container" class="flex flex-col gap-3 overflow-y-auto pb-4 px-1 flex-grow"></div>
+        </div>
+
+        <!-- SKRIN KEDAI KAPAL -->
+        <div id="screen-shop" class="game-screen hidden flex-col p-4 h-full w-full bg-slate-900">
+            <div class="flex items-center mb-4 mt-2">
+                <button onclick="nav('menu')" class="text-3xl mr-3 active:scale-90 bg-sky-800/80 rounded-full w-12 h-12 flex items-center justify-center border border-sky-600 shadow-md">⬅️</button>
+                <div>
+                    <h2 class="text-2xl font-black text-yellow-400 leading-none drop-shadow">KEDAI KAPAL 🛒</h2>
+                    <p class="text-sky-200 text-xs mt-1">Model mengikut warna Rumah Sukan anda</p>
+                </div>
+            </div>
+            <div id="shop-container" class="grid grid-cols-2 gap-3 overflow-y-auto pb-4 px-1 flex-grow"></div>
+        </div>
+
+        <!-- SKRIN 2: PETA PULAU -->
+        <div id="screen-map" class="game-screen hidden flex-col bg-sky-400 relative h-full w-full">
+            <div class="absolute inset-0 opacity-30 pointer-events-none" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.2) 20px, rgba(255,255,255,0.2) 40px);"></div>
+            <div class="absolute bottom-0 w-full h-[35%] bg-blue-700 rounded-t-[50%] pointer-events-none"></div>
+            
+            <div class="relative w-full h-full p-4 flex flex-col">
+                <h2 class="text-xl font-black text-center text-sky-950 drop-shadow-md mb-2 bg-white/80 py-2 rounded-full z-10 mx-4">PETA LAUTAN</h2>
+                <div class="relative w-full flex-grow mt-2" id="map-area">
+                    
+                    <div id="map-boat" class="absolute z-30 pointer-events-none transition-all duration-1000 ease-in-out filter drop-shadow-lg"></div>
+
+                    <div id="island-1" class="island-node" style="bottom: 5%; left: 35%;" onclick="selectIsland(1)">
+                        <div class="island-icon text-3xl">🌴</div><span class="island-label">Fathah</span>
+                    </div>
+                    <div id="island-2" class="island-node island-locked" style="bottom: 18%; left: 70%;" onclick="selectIsland(2)">
+                        <div class="island-icon text-3xl">🌊</div><span class="island-label">Kasrah</span>
+                    </div>
+                    <div id="island-3" class="island-node island-locked" style="bottom: 33%; left: 35%;" onclick="selectIsland(3)">
+                        <div class="island-icon text-3xl">⛰️</div><span class="island-label">Dammah</span>
+                    </div>
+                    <div id="island-4" class="island-node island-locked" style="bottom: 48%; left: 70%;" onclick="selectIsland(4)">
+                        <div class="island-icon text-3xl">🐊</div><span class="island-label">Fathatain</span>
+                    </div>
+                    <div id="island-5" class="island-node island-locked" style="bottom: 63%; left: 35%;" onclick="selectIsland(5)">
+                        <div class="island-icon text-3xl">🐙</div><span class="island-label">Kasratain</span>
+                    </div>
+                    <div id="island-6" class="island-node island-locked" style="top: 15%; left: 70%;" onclick="selectIsland(6)">
+                        <div class="island-icon text-3xl">🦈</div><span class="island-label">Dammatain</span>
+                    </div>
+                    <div id="island-7" class="island-node island-locked" style="top: 2%; left: 50%;" onclick="selectIsland(7)">
+                        <div class="island-icon text-4xl border-yellow-400 glow-btn" style="width:4.5rem; height:4.5rem;">☠️</div><span class="island-label text-yellow-400">RAJA LANUN</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SKRIN 3: PILIHAN MOD -->
+        <div id="screen-modes" class="game-screen hidden flex-col p-4 h-full w-full transition-colors duration-500">
+            <div class="flex items-center mb-4 mt-2">
+                <button onclick="nav('map')" class="text-3xl mr-3 active:scale-90 bg-sky-800/80 rounded-full w-12 h-12 flex items-center justify-center border border-sky-600 shadow-md">⬅️</button>
+                <div>
+                    <h2 id="modes-island-title" class="text-2xl font-black text-yellow-400 leading-none drop-shadow">PULAU</h2>
+                    <p class="text-sky-200 text-xs mt-1">Selesaikan 3 misi untuk belayar</p>
+                </div>
+            </div>
+            <div id="modes-container" class="flex flex-col gap-3 overflow-y-auto pb-4 px-1 flex-grow"></div>
+        </div>
+
+        <!-- SKRIN CUTSCENE (DIALOG LANUN TEWAS) -->
+        <div id="screen-cutscene" class="game-screen hidden flex-col bg-sky-950 p-6 items-center justify-center text-center h-full w-full relative">
+            <div class="z-10 flex flex-col items-center w-full max-w-xs">
+                <div id="cutscene-avatar" class="text-8xl mb-4 animate-bounce filter drop-shadow-lg">🏴‍☠️</div>
+                <h3 id="cutscene-name" class="text-xl font-black text-yellow-400 mb-4 bg-sky-900/90 px-4 py-1.5 rounded-full border border-yellow-500 shadow-md">LANUN JACK SEPARUH</h3>
+                
+                <div class="relative bg-amber-100 text-slate-900 p-5 rounded-2xl border-4 border-amber-600 shadow-2xl mb-8 w-full text-left">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[14px] border-l-transparent border-r-transparent border-b-amber-600"></div>
+                    <p id="cutscene-text" class="text-base font-bold leading-relaxed text-center"></p>
+                </div>
+                
+                <button onclick="finishCutscene()" id="cutscene-btn" class="btn-primary w-full py-4 text-xl flex items-center justify-center gap-2 group shadow-xl">
+                    <span id="cutscene-btn-text">SETERUSNYA</span>
+                    <span id="cutscene-btn-icon" class="text-2xl group-hover:translate-x-1 transition-transform">➡️</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SKRIN 4: GAMEPLAY -->
+        <div id="screen-game" class="game-screen hidden flex-col bg-sky-900 h-full w-full">
+            <div class="bg-sky-950 p-3 shadow-lg flex justify-between items-center border-b-2 border-sky-800 z-10">
+                <button onclick="abortGame()" class="text-lg bg-red-500 w-8 h-8 rounded-full flex items-center justify-center border-2 border-red-700 shadow-sm font-black active:scale-90">✖</button>
+                <h2 id="game-title" class="text-sm md:text-base font-black text-white tracking-widest uppercase">MOD</h2>
+                <div id="game-score-display" class="font-bold text-yellow-400 bg-black/40 px-3 py-1 rounded-md text-sm border border-slate-700">0 💰</div>
+            </div>
+            <div id="game-area" class="flex-grow flex flex-col items-center p-4 w-full relative overflow-y-auto"></div>
+        </div>
+
+        <!-- SKRIN 5: KEPUTUSAN -->
+        <div id="screen-results" class="game-screen hidden flex-col bg-sky-900 p-6 items-center justify-center text-center h-full w-full">
+            <h2 class="text-4xl font-black text-white mb-2 drop-shadow-md" id="result-title">SELESAI!</h2>
+            <div id="result-stars" class="flex gap-2 justify-center mb-6"></div>
+            
+            <div class="bg-slate-800 p-5 rounded-3xl w-full max-w-xs border-4 border-slate-700 mb-8 shadow-2xl relative">
+                <p id="result-msg" class="text-lg font-bold text-sky-200 mb-5"></p>
+                <div class="grid grid-cols-2 gap-3 text-left">
+                    <div class="bg-sky-950 p-3 rounded-xl border border-sky-800 shadow-inner">
+                        <div class="text-xs text-sky-400 font-bold mb-1">Skor Menyumbang</div>
+                        <div id="result-score" class="text-xl font-black text-white">0</div>
+                    </div>
+                    <div class="bg-sky-950 p-3 rounded-xl border border-sky-800 shadow-inner">
+                        <div class="text-xs text-yellow-500 font-bold mb-1">Syiling Emas</div>
+                        <div id="result-coins" class="text-xl font-black text-yellow-400">0 💰</div>
+                    </div>
+                    <div class="bg-sky-950 p-3 rounded-xl border border-sky-800 shadow-inner">
+                        <div class="text-xs text-green-500 font-bold mb-1">Betul</div>
+                        <div id="result-correct" class="text-xl font-black text-green-400">0</div>
+                    </div>
+                    <div class="bg-sky-950 p-3 rounded-xl border border-sky-800 shadow-inner">
+                        <div class="text-xs text-red-500 font-bold mb-1">Salah</div>
+                        <div id="result-wrong" class="text-xl font-black text-red-400">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="result-buttons" class="w-full max-w-xs flex flex-col gap-3"></div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
